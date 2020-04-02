@@ -29,11 +29,6 @@ def get_tokens():
     header_bytes = header.encode()
     sock.sendall(header_bytes)
     response = read()
-    while True:
-        recv = sock.recv(1024)
-        if not recv:
-            break
-        response += str(recv)
     csrf_idx = response.find('csrftoken=') + 10
     sessionid_idx = response.find('sessionid=') + 10
     assert(csrf_idx > 0 and sessionid_idx > 0)
@@ -53,7 +48,7 @@ def login():
     body += '&csrfmiddlewaretoken=' + token_tuple[0]
     body += '&next=%2Ffakebook%2F\r\n\r\n'
 
-    header = 'POST http://fring.ccs.neu.edu/accounts/login HTTP/1.1\r\n'
+    header = 'POST /accounts/login/ HTTP/1.1\r\n'
     header += 'Host: ' + HOST + '\r\n'
     header += 'Content-Length: ' + str(len(body)) + '\r\n'
     header += 'Cache-Control: max-age=0\r\n'
