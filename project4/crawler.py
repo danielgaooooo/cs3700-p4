@@ -10,6 +10,15 @@ HOST='fring.ccs.neu.edu'
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((socket.gethostbyname(HOST), 80))
 
+def read():
+    response = ''
+    while True:
+        recv = sock.recv(1024)
+        if not recv:
+            break
+        response += str(recv)
+    return response
+
 # Returns the CSRF token and Session ID as a tuple, in that order
 # This method is called prior to login
 def get_tokens():
@@ -19,7 +28,7 @@ def get_tokens():
     header += 'Host: ' + HOST + '\r\n\r\n'
     header_bytes = header.encode()
     sock.sendall(header_bytes)
-    response = ''
+    response = read()
     while True:
         recv = sock.recv(1024)
         if not recv:
@@ -31,7 +40,6 @@ def get_tokens():
     csrf = response[csrf_idx:csrf_idx+32]
     sessionid = response[sessionid_idx:sessionid_idx+32]
     ret = (csrf, sessionid)
-    print(ret)
     return ret
 
 def login():
@@ -39,13 +47,13 @@ def login():
     print("Retrieved csrf token: " + token_tuple[0])
     print("Retrieved session id: " + token_tuple[1])
 
+
     body = 'username=' + USERNAME
     body += '&password=' + PASSWORD
     body += '&csrfmiddlewaretoken=' + token_tuple[0]
-    body += '&next=%2Ffakebook%2F'
-    body = body.encode()
+    body += '&next=%2Ffakebook%2F\r\n\r\n'
 
-    header = 'POST /accounts/login/ HTTP/1.1\r\n'
+    header = 'POST http://fring.ccs.neu.edu/accounts/login HTTP/1.1\r\n'
     header += 'Host: ' + HOST + '\r\n'
     header += 'Content-Length: ' + str(len(body)) + '\r\n'
     header += 'Cache-Control: max-age=0\r\n'
@@ -58,15 +66,17 @@ def login():
     header += 'Accept-Encoding: gzip, deflate\r\n'
     header += 'Accept-Language: en-US,en;q=0.9\r\n'
     header += 'Cookie: csrftoken='+ token_tuple[0] +'; sessionid=' + token_tuple[1] + '\r\n\r\n'
-    header = header.encode()
 
-    payload = header + body
-    print("\n\nSENDING POST LOGIN REQUEST ========================")
-    print(payload.decode())
+    header += body
+
+    payload = header.encode()
+
+    print("\nSENDING POST LOGIN REQUEST =============================")
     sock.sendall(payload)
-    response = sock.recv(4096)
-    print("\n\nRECEIVED DATA: =========================================")
-    print(response.decode())
+    print(payload.decode())
+    response = read()
+    print("\nRECEIVED DATA: =========================================")
+    print(response)
 
 def main():
     login()
